@@ -1,0 +1,69 @@
+import CommonDialog from "@/Common/Dialog";
+import { createSalesPerson } from "@/services/SalesOrderService";
+import { SalesPersonData } from "@/types/salesorder.type";
+import { useState } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+
+type SalesPersonFormProps = {
+    refreshSalesPersons: () => void;
+};
+
+const SalesPersonForm: React.FC<SalesPersonFormProps> = ({refreshSalesPersons}) => {
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+    const [error, setError] = useState<string>("");
+
+    const { handleSubmit, control, reset } = useForm<SalesPersonData>({
+        defaultValues: {
+            salesPersonName: "",
+            abbrev: "",
+        }
+    });
+
+    const onSubmitSalesPerson: SubmitHandler<SalesPersonData> = async (data) => {
+        setError("");
+        try {
+            const response = await createSalesPerson(data);
+            
+            if (!response || response.statusCode !== 200) {
+                setError(response.message);
+            } else {
+                setIsDialogOpen(false);
+                reset();
+                refreshSalesPersons();
+            }
+        } catch (error: any) {
+            setError(error.message);
+        }
+    }
+
+    return(
+        <CommonDialog
+            title="Create Sales Person"
+            description="Enter Sales Person Name and Abbreviation. Click save when done."
+            triggerText="Create Sales Person"
+            fields={[
+                {
+                    name: "salesPersonName",
+                    control,
+                    label: "Sales Person",
+                    type: "text",
+                    placeholder: "Enter Sales Person name",
+                    rules: { required: "Sales Person name is required", minLength: { value: 2, message: "At least 2 characters required" } },
+                },
+                {
+                    name: "abbrev",
+                    control,
+                    label: "Abbreviation",
+                    type: "text",
+                    placeholder: "Enter abbreviation (e.g., James Smith → JS)",
+                    rules: { required: "Abbreviation is required" },
+                },
+            ]}    
+            onSubmit={handleSubmit(onSubmitSalesPerson)}
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+        />
+    )
+}
+
+export default SalesPersonForm;

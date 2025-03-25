@@ -1,0 +1,65 @@
+import { DataTable } from "@/components/Datatable/data-table";
+import { DataTableSkeleton } from "@/components/Datatable/data-table-skeleton";
+import { columns } from "@/components/Datatable/machinetype-columns";
+import MachineTypeForm from "@/components/Form/MachineTypeForm";
+import { getAllMachineTypes } from "@/services/ProductionService";
+import { MachineTypeData } from "@/types/production.type";
+import { useEffect, useState } from "react";
+
+function MachineType() {
+    const [machineTypes, setMachineTypes] = useState<MachineTypeData[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string>("");
+
+    const fetchMachineTypes = async () => {
+        setError("");
+        try {
+            const response = await getAllMachineTypes();
+
+            if (!response || response.statusCode !== 200) {
+                setError(response.message);
+            }
+            setMachineTypes(response.data || []);
+        } catch (error: any) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchMachineTypes();
+    })
+
+
+    if (loading) {
+        return (
+            <div className="py-4 w-full px-2">
+                <h1 className="pb-2 text-3xl font-medium border-b mb-4">Machine Type</h1>
+                <DataTableSkeleton
+                    columnCount={columns.length}
+                    rowCount={10}
+                    searchableColumnCount={1}
+                    showViewOptions={true}
+                    withPagination={true}
+                    shrinkZero={false}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="py-4 w-full px-2">
+            <h1 className="pb-2 text-3xl font-medium border-b mb-4">Machine Type</h1>
+            <div className="flex flex-col items-end mb-4">
+                <MachineTypeForm refreshMachineTypes={fetchMachineTypes} />
+            </div>
+
+            <DataTable columns={columns} data={machineTypes} searchKey="machine type" />
+
+        </div>
+    );
+
+}
+
+export default MachineType;
