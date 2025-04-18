@@ -1,5 +1,82 @@
-import { MachineModelData, MachineTypeData, MakeData, PowerRatingData, ProductionResponse } from "@/types/production.type";
+import { generateQueryParamsForDate } from "@/lib/utils";
 import { FetchData, FetchDataResponse } from "./FetchData";
+import { Production, ProductionList } from "@/utils/types/production.types";
+import { MachineModelData, MachineTypeData, MakeData, PowerRatingData, ProductionResponse } from "@/types/production.type";
+
+
+
+export const getAllProductionList = async (fromDate?: Date, toDate?: Date) => {
+    try {
+      let url: string = "production/get-production-details-list";
+  
+      url = generateQueryParamsForDate(url, fromDate, toDate);
+  
+      const response = await FetchData<ProductionList[]>({
+        url,
+        method: "GET",
+      });
+  
+      if (!response.data) {
+        return {
+          success: false,
+          statusCode: 400,
+          message: response.message || "Response is Empty.",
+          data: [],
+        };
+      }
+  
+      return {
+        success: response.success,
+        statusCode: response.statusCode,
+        data: response.data,
+        message: response.message,
+      };
+    } catch (error) {
+      throw error;
+    }
+};
+
+export const updateProductionProgress = async (productionId: number, data: { currentProgress: number; comments?: string | null }) => {
+  try {
+    const response = await FetchData({
+      url: `production/update-production-progress/${productionId}`,
+      method: "PUT",
+      data,
+    });
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getProductionDetailsByProductionId = async (productionId: number) => {
+  try{
+    const response = await FetchData<Production>({
+      url: `production/get-production-detail-by-production-id/${productionId}`,
+      method: "GET",
+    });
+
+    if (!response.data) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: response.message || "Response is Empty.",
+        data: null,
+      };
+    }
+
+    return {
+      success: response.success,
+      statusCode: response.statusCode,
+      data: response.data,
+      message: response.message,
+    };
+  }catch (error) {
+    throw error;
+  }
+}
+
 
 //***************************** < MACHINE TYPE SECTION > *****************************//
 export async function createMachineType(data: MachineTypeData): Promise<FetchDataResponse<ProductionResponse>> {
@@ -13,7 +90,7 @@ export async function createMachineType(data: MachineTypeData): Promise<FetchDat
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to create machine type.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -36,7 +113,7 @@ export async function getAllMachineTypes(): Promise<FetchDataResponse<MachineTyp
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to all fetch machine types.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -63,7 +140,7 @@ export async function createMachineModel(data: MachineModelData): Promise<FetchD
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to create machine modal.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -86,7 +163,7 @@ export async function getAllMachineModels(): Promise<FetchDataResponse<MachineMo
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to all fetch machine modals.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -113,7 +190,7 @@ export async function createMake(data: MakeData): Promise<FetchDataResponse<Prod
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to create make.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -136,7 +213,7 @@ export async function getAllMakes(): Promise<FetchDataResponse<MakeData[]>> {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to all fetch makes.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -163,7 +240,7 @@ export async function createPowerRating(data: PowerRatingData): Promise<FetchDat
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to create power rating.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -186,7 +263,7 @@ export async function getAllPowerRatings(): Promise<FetchDataResponse<PowerRatin
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to all fetch power ratings.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -198,4 +275,4 @@ export async function getAllPowerRatings(): Promise<FetchDataResponse<PowerRatin
         message: response.message,
     };
 }
-//***************************** < POWER RATING SECTION > *****************************//
+//***************************** < POWER RATING SECTION > *****************************//P

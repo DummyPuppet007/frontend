@@ -3,6 +3,8 @@ import UserForm from "../Form/UserForm";
 import { useParams } from "react-router-dom";
 import { getUserDetail } from "@/services/UserService";
 import { UserData } from "@/types/user.type";
+import ErrorMessage from "../common/ErrorMessage";
+import { UserFormSkeleton } from "../common/Skeletons";
 
 function Register() {
     const { id } = useParams<{ id: string }>();
@@ -17,22 +19,32 @@ function Register() {
         try {
             const response = await getUserDetail(Number(id));
             if (!response || response.statusCode !== 200) {
-                setError('User Detail Not Found.');
+                setError("Error : User Detail Not Found." + response.message);
+                return;
             }
             
             setUser(response.data);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (error: any) {
+            setError("Error : " + error.message);
         } 
     }
 
     useEffect(() => {
         fetchUserDetail()
     }, [id])
+
+    if (error) {
+        return (
+            <div className="m-8">
+                <ErrorMessage message={error} />
+                <UserFormSkeleton />
+            </div>
+        )
+    }
     
     return (
         <>
-            <div className="py-4 px-2 w-full">
+            <div className="m-8">
                 <UserForm initialData={user} />
             </div>
 

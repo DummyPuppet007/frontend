@@ -14,7 +14,7 @@ export async function addUserPermission(data: UserPermissionData): Promise<Fetch
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to add user permission.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -37,7 +37,7 @@ export async function getAllUserPermissions(): Promise<FetchDataResponse<UserPer
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to get all user permissions.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }

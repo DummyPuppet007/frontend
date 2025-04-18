@@ -10,12 +10,12 @@ export async function getRoles(): Promise<FetchDataResponse<RoleList[]>> {
         url: "auth/get-all-roles", 
         method: "GET",
     });
-
+    
     if (!response.data) {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -39,7 +39,7 @@ export async function createRole(data : RoleFormData) : Promise<FetchDataRespons
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }

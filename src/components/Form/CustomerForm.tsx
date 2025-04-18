@@ -2,14 +2,19 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Country, State, City }  from 'country-state-city';
-import currencyCodes from "currency-codes";
-import { DropdownSearch } from "@/Common/DropdownSearch";
-import { useEffect, useMemo, useState } from "react";
+import { DropdownSearch } from "@/components/common/DropdownSearch";
+import { useCallback, useEffect, useState } from "react";
 import { CustomerData } from "@/types/customer.type";
-import { createCustomer, editCustomer } from "@/services/CustomerService";
+import { createCustomer, editCustomer, getCitiesByName, getCountriesByName, getStatesByName } from "@/services/CustomerService";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
+import { Button } from "../ui/button";
+import { debounce } from "lodash";
+import { SearchResult } from "@/utils/types/common.types";
+import { Lock } from "lucide-react";
+import { CustomerFormSkeleton } from "../common/Skeletons";
+import ErrorMessage from "../common/ErrorMessage";
 
 type dataList = {
     id: number;
@@ -36,49 +41,86 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
             customerComments: ""
         }
     });
+
     const [selectedCountry, setSelectedCountry] = useState<dataList | null>(null);
     const [selectedState, setSelectedState] = useState<dataList | null>(null);
     const [selectedCity, setSelectedCity] = useState<dataList | null>(null);
-    const [selectedCurrency, setSelectedCurrency] = useState<dataList | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [countryResults, setCountryResults ] = useState<SearchResult[]>([]);
+    const [stateResults, setStateResults ] = useState<SearchResult[]>([]);
+    const [cityResults, setCityResults ] = useState<SearchResult[]>([]);
+    const [error, setError ] = useState<string>("");
     const navigate = useNavigate();
-    const [error, setError] = useState<string>("");
 
-    const countries = useMemo(
-        () =>
-            Country.getAllCountries().map((country, index) => ({
-                id: index,
-                name: country.name,
-                isoCode: country.isoCode,
-            })),
+    const handleCountrySearch = useCallback(
+        debounce(async (query: string) =>  {
+            if(query.length >= 2 ) {
+                const filteredCountries = await getCountriesByName(query);
+
+                if(!filteredCountries || filteredCountries.statusCode !== 200 || !filteredCountries.data) {
+                    setError("Error : " + filteredCountries.message);
+                    return;
+                } else { 
+                    const formatCountry = filteredCountries.data.map((country: any) => ({
+                        id: country.id,
+                        name: country.name,
+                    }))
+                    setCountryResults(formatCountry);
+                }
+            } else {
+                setCountryResults([]);
+            }
+            } , 300),
         []
     );
 
-    const states = useMemo(() => {
-        if (!selectedCountry) return [];
-        return State.getStatesOfCountry(
-            countries.find((c) => c.id === selectedCountry.id)?.isoCode || ""
-        ).map((state, index) => ({
-            id: index,
-            name: state.name,
-            isoCode: state.isoCode,
-        }));
-    }, [selectedCountry]);
+    const handleStateSearch = useCallback(
+        debounce(async (query: string) => {
+            if(!selectedCountry) return;
 
-    const cities = useMemo(() => {
-        if (!selectedCountry || !selectedState) return [];
-        return City.getCitiesOfState(
-            countries.find((c) => c.id === selectedCountry.id)?.isoCode || "",
-            states.find((s) => s.id === selectedState.id)?.isoCode || ""
-        ).map((city, index) => ({
-            id: index,
-            name: city.name,
-        }));
-    }, [selectedCountry, selectedState]);
+            if(query.length >= 2 && selectedCountry?.id) {
+                const filteredStates = await getStatesByName(selectedCountry.id, query);
 
-    const currencies = currencyCodes.data.map((currency, index) => ({
-        id: index,
-        name: `${currency.code} - ${currency.currency}`,
-    }));
+                if(!filteredStates || filteredStates.statusCode !== 200 || !filteredStates.data) {
+                    setError("Error : " + filteredStates.message);
+                    return;
+                } else {
+                    const formatState = filteredStates.data.map((state: any) => ({
+                        id: state.id,
+                        name: state.name
+                    }))
+                    setStateResults(formatState);
+                }
+            } else {
+                setStateResults([]);
+            }
+        }, 300),
+        []
+    );
+
+    const handleCitySearch = useCallback(
+        debounce(async (query: string) => {
+            if(!selectedState) return;
+
+            if(query.length >= 2 && selectedState?.id) {
+                const filteredCities = await getCitiesByName(selectedState.id, query);
+
+                if(!filteredCities || filteredCities.statusCode !== 200 || !filteredCities.data) {
+                    setError("Error : " + filteredCities.message);
+                    return;
+                } else {
+                    const formatCity = filteredCities.data.map((city: any) => ({
+                        id: city.id,
+                        name: city.name
+                    }))
+                    setCityResults(formatCity);
+                }
+            } else {
+                setCityResults([]);
+            }
+        }, 300),
+        []
+    );
 
     useEffect(() => {
         if (initialData) {
@@ -88,28 +130,26 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
 
     useEffect(() => {
         if (initialData) 
-        {
-            setSelectedCountry((prev) => prev || countries.find((c) => 
+        {   
+            setSelectedCountry((prev) => prev || countryResults.find((c) => 
                 c.name === initialData.country) || null);
 
-            setSelectedState((prev) => prev || states.find((s) => 
+            setSelectedState((prev) => prev || stateResults.find((s) => 
                 s.name === initialData.state) || null);
 
-            setSelectedCity((prev) => prev || cities.find((c) => 
+            setSelectedCity((prev) => prev || cityResults.find((c) => 
                 c.name === initialData.city) || null);
 
-            setSelectedCurrency((prev) => prev || currencies.find((c) => 
-                c.name.startsWith(initialData.currency!)) || null);
         }
 
-    }, [initialData, countries, states, cities, currencies]);    
+    }, [initialData, countryResults, stateResults, cityResults]);    
 
     const onSubmitCreateCustomer: SubmitHandler<CustomerData> = async (data) => {
         const formData: CustomerData = {
             ...data,
             customerName: data.customerName, 
             customerType: data.customerType, 
-            currency: data.currency?.split(" - ")[0] || null,
+            currency: data.currency === "" ? null : data.currency,
             city: data.city === "" ? null : data.city,
             country: data.country === "" ? null : data.country,
             customerComments: data.customerComments === "" ? null : data.customerComments,
@@ -121,44 +161,65 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
         };
 
         if (formData) {
-            setError("");
+            setLoading(true);
             if (initialData) {
                 try {
                     const response = await editCustomer(initialData.customerId, formData);
 
                     if (!response || response.statusCode !== 200) {
-                        setError("Customer updation failed.");
-                    }
-
-                    navigate("/dashboard/customers");
+                        toast.error("Failed to update customer.Please try again.",{
+                            className: 'font-medium max-w-[400px]',
+                        });
+                        return;
+                    } else {
+                        toast.success("Customer updated successfully.");
+                        navigate("/dashboard/customers");
+                    }                    
                 } catch (error: any) {
-                    setError(error.message);
+                    toast.error("Error : " + error.message);
+                } finally {
+                    setLoading(false);
                 }
             } else {
                 try {
                     const response = await createCustomer(formData);
 
                     if (!response || response.statusCode !== 200) {
-                        setError("Customer creation failed.");
-                    }
-
-                    navigate("/dashboard/customers");
+                        toast.error("Form submission failed. Please check your details and try again.", {
+                            className: 'font-medium max-w-[400px]',
+                        });
+                        return;
+                    } else {
+                        toast.success("Customer created successfully.");
+                        navigate("/dashboard/customers");
+                    }      
                 } catch (error: any) {
-                    setError(error.message);
+                    toast.error(error.message);
+                } finally {
+                    setLoading(false);
                 }
             }
         }
     }
+
+    if(error) {
+        return(
+            <div>
+                <ErrorMessage message={error} />
+                <CustomerFormSkeleton />
+            </div>
+        )
+    }
     
     return(
         <>
-            <h1 className="pb-2 text-3xl font-medium border-b mb-4">{initialData ? "Edit Customer" : "Create Customer"}</h1>
+            <h1 className="text-3xl font-bold border-b mb-4">{initialData ? "Edit Customer" : "Create Customer"}</h1>
             <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="my-5 py-5 border border-neutral-400 rounded-lg shadow-lg">
-                <form className="space-y-6 m-4" onSubmit={handleSubmit(onSubmitCreateCustomer)}>
+            className="">
+                <form className="space-y-8 mt-4" onSubmit={handleSubmit(onSubmitCreateCustomer)}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="customerName" className="block text-sm font-medium text-gray-700">
@@ -226,13 +287,15 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
                                 render={() => (
                                     <DropdownSearch
                                         placeholder="Search country name"
-                                        results={countries}
-                                        onSearch={() => { }}
+                                        results={countryResults}
+                                        onSearch={handleCountrySearch}
                                         onSelect={(value) => {
                                             setValue("country", value.name);
                                             setSelectedCountry(value);  
                                             setSelectedState(null);
                                             setSelectedCity(null);
+                                            setStateResults([]);
+                                            setCityResults([]);
                                         }}
                                         getDisplay={() => selectedCountry?.name || ""}
                                     />
@@ -249,12 +312,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
                                 render={() => (
                                     <DropdownSearch
                                         placeholder="Search state name"
-                                        results={states}
-                                        onSearch={() => { }}
+                                        results={stateResults}
+                                        onSearch={handleStateSearch}
                                         onSelect={(value) => {
                                             setValue("state", value.name);
                                             setSelectedState(value);
                                             setSelectedCity(null);
+                                            setCityResults([]);
                                         }}
                                         getDisplay={() => selectedState?.name  || ""}
                                     />
@@ -274,8 +338,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
                                 render={() => (
                                     <DropdownSearch
                                         placeholder="Search city name"
-                                        results={cities}
-                                        onSearch={() => { }}
+                                        results={cityResults}
+                                        onSearch={handleCitySearch}
                                         onSelect={(value) => {
                                             setValue("city", value.name);
                                             setSelectedCity(value);
@@ -352,22 +416,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
                             <Label htmlFor="currency" className="block text-sm font-medium text-gray-700">
                                 Currency
                             </Label>
-                            <Controller
-                                name="currency"
-                                control={control}
-                                render={() => (
-                                    <DropdownSearch
-                                        placeholder="Select Currency"
-                                        results={currencies}
-                                        onSearch={() => { }}
-                                        onSelect={(value) => {
-                                            setValue("currency", value.name);
-                                            setSelectedCurrency(value);
-                                        }}
-                                        getDisplay={() => selectedCurrency?.name || ""}
-                                    />
-                                )}
-                            />
+                            <div className="relative">
+                                <Input
+                                    type="text"
+                                    placeholder="Enter Currency"
+                                    id="currency"
+                                    autoComplete="off"
+                                    readOnly
+                                    {...register("currency")}
+                                    className="mt-1 block w-full px-3 py-2 pr-10 bg-gray-100 border border-gray-300 rounded-md shadow-sm cursor-not-allowed text-gray-500"
+                                />
+                                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            </div>
                         </div>
                         <div>
                             <Label htmlFor="customerComments" className="block text-sm font-medium text-gray-700">
@@ -385,15 +445,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
                     </div>
 
                     <div>
-                        <button
-                            type="submit"
-                            className="w-full bg-zinc-800 text-white px-4 py-2 mt-3 rounded-lg font-medium shadow-lg transition-all relative 
-             hover:bg-zinc-700 hover:shadow-inner hover:text-lg"
-                        >
-                            {initialData ? "Edit Customer" : "Create Customer"}
-                        </button>
-
-
+                        <Button
+                            type="submit" disabled={loading}
+                            className="w-full">
+                            {loading ? "Submitting..." :
+                            initialData ? "Update Customer" : "Create Customer"}
+                        </Button>
                     </div>
                 </form>
             </motion.div>
@@ -402,3 +459,4 @@ const CustomerForm: React.FC<CustomerFormProps> = ({initialData}) => {
 }
 
 export default CustomerForm;
+

@@ -1,8 +1,9 @@
-import CommonDialog from "@/Common/Dialog";
+import CommonDialog from "@/components/common/Dialog"
 import { createSalesPerson } from "@/services/SalesOrderService";
 import { SalesPersonData } from "@/types/salesorder.type";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 
 type SalesPersonFormProps = {
     refreshSalesPersons: () => void;
@@ -10,7 +11,6 @@ type SalesPersonFormProps = {
 
 const SalesPersonForm: React.FC<SalesPersonFormProps> = ({refreshSalesPersons}) => {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-    const [error, setError] = useState<string>("");
 
     const { handleSubmit, control, reset } = useForm<SalesPersonData>({
         defaultValues: {
@@ -19,20 +19,21 @@ const SalesPersonForm: React.FC<SalesPersonFormProps> = ({refreshSalesPersons}) 
         }
     });
 
-    const onSubmitSalesPerson: SubmitHandler<SalesPersonData> = async (data) => {
-        setError("");
+    const onSubmitSalesPerson: SubmitHandler<SalesPersonData> = async (data) => {    
         try {
             const response = await createSalesPerson(data);
             
             if (!response || response.statusCode !== 200) {
-                setError(response.message);
+                toast.error("Failed to create Sales Person : "+response.message);
+                return;
             } else {
+                toast.success("Sales Person created successfully.");
                 setIsDialogOpen(false);
                 reset();
                 refreshSalesPersons();
             }
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : "+ error.message);
         }
     }
 

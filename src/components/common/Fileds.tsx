@@ -6,7 +6,7 @@ import { DropdownSearch } from "./DropdownSearch";
 
 export interface CommonFieldProps {
     name: string;
-    control: any;
+    control?: any;
     label: string;
     type: "text" | "password" | "select" | "searchableSelect";
     options?: { id: number; name: string }[];
@@ -42,15 +42,15 @@ const CommonField: React.FC<CommonFieldProps> = ({
                                 placeholder={placeholder}
                                 value={field.value}
                                 onChange={field.onChange}
-                                className="w-full bg-gray-100 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 p-2"
+                                className="w-full bg-white border border-gray-300 rounded-md p-2"
                             />
                         ) : type === "select" ? (
                             <Select onValueChange={(value) => field.onChange(Number(value))} 
                             value={field.value ? field.value.toString() : ""}>
-                                <SelectTrigger className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500">
+                                <SelectTrigger className="w-full bg-white border border-gray-300 rounded-md p-2 ">
                                     <SelectValue placeholder={placeholder} />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-300">
+                                <SelectContent>
                                     {options.map(option => (
                                         <SelectItem key={option.id} value={String(option.id)}>
                                             {option.name}

@@ -13,7 +13,7 @@ export async function getActions(): Promise<FetchDataResponse<ActionList[]>> {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -37,7 +37,7 @@ export async function createAction(data: ActionData): Promise<FetchDataResponse<
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -50,9 +50,9 @@ export async function createAction(data: ActionData): Promise<FetchDataResponse<
     };
 }
 
-export async function updateAction(id:number, data: ActionData): Promise<FetchDataResponse<ActionServiceResponse>>{
+export async function updateAction(data: ActionData): Promise<FetchDataResponse<ActionServiceResponse>>{
     const response = await FetchData<ActionServiceResponse>({
-        url: `update-action/${id}`,
+        url: "auth/update-action",
         method: "PUT",
         data: data,
     });
@@ -61,7 +61,7 @@ export async function updateAction(id:number, data: ActionData): Promise<FetchDa
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -76,15 +76,15 @@ export async function updateAction(id:number, data: ActionData): Promise<FetchDa
 
 export async function deleteAction(id:number): Promise<FetchDataResponse<ActionServiceResponse>>{
     const response = await FetchData<ActionServiceResponse>({
-        url: `delete-action/${id}`,
-        method: "DELETE",
+        url: `auth/delete-action/${id}`,
+        method: "PUT",
     });
 
     if (!response || !response.success) {
         return {
             success: false,
             statusCode: 400,
-            message: "Failed to delete action.Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }

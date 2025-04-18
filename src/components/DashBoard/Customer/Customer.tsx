@@ -3,6 +3,8 @@ import { getCustomerDetail } from "@/services/CustomerService";
 import { CustomerData } from "@/types/customer.type";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import ErrorMessage from "@/components/common/ErrorMessage";
+import { CustomerFormSkeleton } from "@/components/common/Skeletons";
 
 function Customer(){
     const [customer, setCustomer] = useState<CustomerData | null>(null);
@@ -18,12 +20,13 @@ function Customer(){
             const response = await getCustomerDetail(Number(id));
             
             if(!response || response.statusCode !== 200) {
-                setError('Customer Detail Not Found.');
+                setError("Error : " + response.message);
+                return;
             }
 
             setCustomer(response.data);
-        } catch (error: any) {
-            setError(error.message);
+        } catch (error: any) {  
+            setError("Error : "+error.message);
         }
     }
 
@@ -31,8 +34,17 @@ function Customer(){
         fetchCustomerDetail();
     },[id])
 
+    if(error){
+        return(
+            <div className="m-8">
+                <ErrorMessage message={error} />
+                <CustomerFormSkeleton />
+            </div>
+        )
+    }
+
     return(
-        <div className="py-4 px-2 w-full">
+        <div className="m-8">
             <CustomerForm initialData={customer}/>
         </div>
     )

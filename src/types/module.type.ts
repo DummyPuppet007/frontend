@@ -4,6 +4,7 @@ export type ModuleServiceResponse = {
 
 
 export type ModuleData = {
+    moduleId? : number;
     moduleName : string;
     description : string;
 }

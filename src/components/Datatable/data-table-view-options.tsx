@@ -26,7 +26,7 @@ export function DataTableViewOptions<TData>({
   table,
 }: DataTableViewOptionsProps<TData>) {
   const triggerRef = React.useRef<HTMLButtonElement>(null);
-  
+
   return (
     <Popover modal>
       <PopoverTrigger asChild>

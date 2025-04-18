@@ -5,6 +5,7 @@ import { DataTable } from "../Datatable/data-table";
 import { columns } from "../Datatable/user-columns";
 import { DataTableSkeleton } from "../Datatable/data-table-skeleton";
 import UserDetail from "./UserDetail";
+import ErrorMessage from "../common/ErrorMessage";
 
 
 function Users() {
@@ -21,15 +22,13 @@ function Users() {
     setError("");
     try {
       const response = await getAllUsers();
-
+      
       if (!response || response.statusCode !== 200) {
-        setError('Fetch Data Error.')
+        setError("Error : Failed to fetch Users." + response.message);
       }
-
       setUsers(response.data || []);
-
     } catch (error: any) {
-      setError(error.message);
+      setError("Error : " + error.message);
     } finally {
       setLoading(false);
     }
@@ -39,12 +38,28 @@ function Users() {
     fetchUsers();
   }, [])
 
+  if(error) {
+    return(
+      <div className="m-8">
+        <ErrorMessage message={error} className="mb-8"/>
+        <DataTableSkeleton
+          columnCount={7}
+          rowCount={10}
+          searchableColumnCount={1}
+          showViewOptions={true}
+          withPagination={true}
+          shrinkZero={false}
+        />
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="py-4 px-2 w-full">
-        <h1 className="pb-2 text-3xl font-medium border-b mb-4">Users</h1>
+      <div className="flex flex-col m-8">
+        <h1 className="text-3xl font-bold border-b mb-4">Users</h1>
         <DataTableSkeleton
-          columnCount={columns.length}
+          columnCount={7}
           rowCount={10}
           searchableColumnCount={1}
           showViewOptions={true}
@@ -55,13 +70,9 @@ function Users() {
     );
   }
 
-  if (error) {
-    return <div>Error : {error}</div>
-  }
-
   return (
-    <div className="py-4 px-2 w-full">
-      <h1 className="pb-2 text-3xl font-medium border-b mb-4">Users</h1>
+    <div className="flex flex-col m-8">
+      <h1 className="text-3xl font-bold border-b mb-4">Users</h1>
       <DataTable columns={columns(handleUserDetail)} data={users} searchKey="user" />
       <UserDetail user={selectedUSer} onClose={() => setSelectedUser(null)} />
     </div>

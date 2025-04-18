@@ -1,8 +1,9 @@
-import CommonDialog from "@/Common/Dialog";
+import CommonDialog from "@/components/common/Dialog"
 import { createPowerRating } from "@/services/ProductionService";
 import { PowerRatingData } from "@/types/production.type";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 
 type PowerRatingFormProps = {
     refreshPowerRatings: () => void;
@@ -10,7 +11,6 @@ type PowerRatingFormProps = {
 
 const PowerRatingForm: React.FC<PowerRatingFormProps> = ({refreshPowerRatings}) => {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-    const [error, setError] = useState<string>("");
 
     const { control, handleSubmit, reset } = useForm<PowerRatingData>({
         defaultValues : {
@@ -19,20 +19,21 @@ const PowerRatingForm: React.FC<PowerRatingFormProps> = ({refreshPowerRatings}) 
     });
 
     const onSubmitPowerRating: SubmitHandler<PowerRatingData> = async (data) => {
-        setError("");
         try {
             const response = await createPowerRating(data);
 
             if (!response || response.statusCode !== 200) {
-                setError(response.message);
+                toast.error("Failed to create Power Rating : " + response.message);
+                return;
             } else {
+                toast.success(response.message);
                 setIsDialogOpen(false);
                 reset();
                 refreshPowerRatings();
             }
 
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     }
 

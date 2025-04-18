@@ -2,7 +2,8 @@ import { useState, useEffect } from "react"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { createAction, updateAction } from "@/services/ActionService"
 import { ActionList } from "@/types/action.type"
-import CommonDialog from "@/Common/Dialog"
+import CommonDialog from "@/components/common/Dialog"
+import toast from "react-hot-toast"
 
 type ActionFormProps = {
     editData: ActionList | null;
@@ -11,7 +12,6 @@ type ActionFormProps = {
 };
 
 const ActionForm: React.FC<ActionFormProps> = ({ editData, setEditData, refreshActions }) => {
-    const [error, setError] = useState<string>("");
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(!!editData);
     const { handleSubmit, reset, setValue, control } = useForm<ActionList>({
         defaultValues: {
@@ -31,30 +31,37 @@ const ActionForm: React.FC<ActionFormProps> = ({ editData, setEditData, refreshA
     }, [editData, setValue]);
 
     const onSubmitAction: SubmitHandler<ActionList> = async (data) => {
-        setError("")
         try {
-            
+            let response;
             if (editData) {
-                const response = await updateAction(editData.actionId, data);
-
+                const updatedData = {
+                    ...data,
+                    actionId: editData.actionId,
+                };
+    
+                response = await updateAction(updatedData);
+                
                 if (!response || response?.statusCode !== 200) {
-                    setError("Failed To Update Action.");
+                    toast.error("Error : " + response.message);
+                    return;
                 }
             }
             else {
-                const response = await createAction(data);
+                response = await createAction(data);
 
                 if (!response || response?.statusCode !== 200) {
-                    setError("Failed To Create Action.");
+                    toast.error("Error : " + response.message);
+                    return;
                 }
             }
+            toast.success(response.message);
             reset();
             setEditData(null);
             setIsDialogOpen(false);
             refreshActions();
         } catch (error: any) {
-            setError(error.message);
-        }
+            toast.error("Error : " + error.message);
+        } 
     };
 
     return (

@@ -1,44 +1,46 @@
-import { UserData, UserServiceResponse } from "@/types/user.type";
 import { FetchData, FetchDataResponse } from "./FetchData";
+import { UserData } from "@/types/user.type";
+import { User } from "@/stores/useAuthStore";
+import { UserServiceResponse } from "@/types/user.type";
 
-export async function registerUser(data: UserData) : Promise<FetchDataResponse<UserServiceResponse>> {
-   
+export async function registerUser(data: UserData): Promise<FetchDataResponse<UserServiceResponse>> {
+
     const response = await FetchData<UserServiceResponse>({
         url: "auth/register",
         method: "POST",
         data: data,
     });
 
-    if(!response.data){
+    if (!response.data) {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
-    
+
     return {
         success: response.success,
         statusCode: response.statusCode,
-        message: response.message || "User registered successfully.",
-        data: response.data, 
+        message: response.message,
+        data: response.data,
     };
 }
 
-export async function editUser(id : number, data : UserData) : Promise <FetchDataResponse<UserServiceResponse>> {   
-   
+export async function editUser(data: UserData): Promise<FetchDataResponse<UserServiceResponse>> {
+
     const response = await FetchData<UserServiceResponse>({
-        url : `auth/edit-user/${id}`,
-        method : "PUT",
+        url: "auth/edit-user",
+        method: "PUT",
         data: data
     });
 
-    if(!response.data){
+    if (!response.data) {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
@@ -46,22 +48,22 @@ export async function editUser(id : number, data : UserData) : Promise <FetchDat
     return {
         success: response.success,
         statusCode: response.statusCode,
-        message: response.message || "User updated successfully.",
-        data: response.data, 
+        message: response.message,
+        data: response.data,
     };
 }
 
-export async function getUserDetail(id : number ) : Promise <FetchDataResponse<UserData>> {
+export async function getUserDetail(id: number): Promise<FetchDataResponse<UserData>> {
     const response = await FetchData<UserData>({
-        url : `auth/get-user/${id}`,
-        method : "GET"
+        url: `auth/get-user/${id}`,
+        method: "GET"
     });
 
-    if(!response.data){
+    if (!response.data) {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
@@ -69,30 +71,53 @@ export async function getUserDetail(id : number ) : Promise <FetchDataResponse<U
     return {
         success: response.success,
         statusCode: response.statusCode,
-        message: response.message || "Data successfully Retrived.",
-        data: response.data, 
+        message: response.message,
+        data: response.data,
     };
 }
 
-export async function getAllUsers() : Promise<FetchDataResponse<UserData[]>> {
+export async function getAllUsers(): Promise<FetchDataResponse<UserData[]>> {
     const response = await FetchData<UserData[]>({
-            url: "auth/get-all-users", 
-            method: "GET",
-        });
-      
-        if (!response.data) {
-            return {
-                success: false,
-                statusCode: 400,
-                message: "Response is Empty.",
-                data: null,
-            };
-        }
-    
+        url: "auth/get-all-users",
+        method: "GET",
+    });
+
+    if (!response.data) {
         return {
-            success: response.success, 
-            statusCode: response.statusCode,
-            data: response.data, 
-            message: response.message,
+            success: false,
+            statusCode: 400,
+            message: response.message || "Response is Empty.",
+            data: null,
         };
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        data: response.data,
+        message: response.message,
+    };
+}
+
+export async function checkUserLoggedIn(): Promise<FetchDataResponse<User>> {
+    const response = await FetchData<User>({
+        url: "auth/refresh-token",
+        method: "POST",
+    });
+
+    if (!response.data) {
+        return {
+            success: false,
+            statusCode: 400,
+            message: response.message || "Response is Empty.",
+            data: null,
+        };
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        message: response.message,
+        data: response.data,
+    };
 }

@@ -10,6 +10,8 @@ import PermissionList from "./DashBoard/PermissionList";
 import RolePermission from "./DashBoard/RolePermission";
 import UserPermission from "./DashBoard/UserPermission";
 import RoutePermission from "./DashBoard/RoutePermission";
+import FieldPermission from "./DashBoard/FieldPermission";
+import FieldPermissionList from "./DashBoard/FieldPermissionList";
 import Customer from "./DashBoard/Customer/Customer";
 import CustomerList from "./DashBoard/Customer/CustomerList";
 import MachineType from "./DashBoard/Production/MachineType";
@@ -31,6 +33,8 @@ export {
     RolePermission,
     UserPermission,
     RoutePermission,
+    FieldPermission,
+    FieldPermissionList,
     Customer,
     CustomerList,
     MachineType,

@@ -36,7 +36,7 @@ const CommonDialog: React.FC<CommonDialogProps> = ({
             <DialogTrigger asChild>
                 <Button>{triggerText}</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] bg-zinc-200 p-6 rounded-lg shadow-lg">
+            <DialogContent className="sm:max-w-[500px] bg-neutral-100 p-6 rounded-lg shadow-lg">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     {description && <DialogDescription className="text-zinc-700">{description}</DialogDescription>}

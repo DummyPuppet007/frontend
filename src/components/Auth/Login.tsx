@@ -1,93 +1,134 @@
-import { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { login as AuthLogin } from "../../services/AuthService";
+import React, { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"; 
+import { Input } from "@/components/ui/input"; 
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { loginSchema } from "@/utils/validations/authValidations";
+import { z } from "zod";
+import { login } from "@/services/AuthService";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { login } from "../../store/authSlice";
-
-type FormValues = {
-  username: string;
-  password: string;
-};
+import useAuthStore, { User } from "@/stores/useAuthStore";
 
 const Login: React.FC = () => {
-  const { register, handleSubmit } = useForm<FormValues>();
+  // State management with TypeScript types
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const {user, setUser} = useAuthStore();
 
-  const loginUser: SubmitHandler<FormValues> = async (data: any) => {
-    setError("")
-    try {
-      const response = await AuthLogin(data);
-
-      if (!response || response.statusCode !== 200) {
-        throw new Error("Login failed!");
-      }
-
-      if (response.data) {
-        dispatch(login({ userId: response.data.userId, roleId: response.data.roleId }));
-        navigate("/dashboard");
-      } else {
-        setError("User Detail is empty.")
-      }
-
-
-    } catch (error: any) {
-      setError(error?.message || "Something went wrong!");
+  useEffect(() => {
+    if(user){
+      navigate("/dashboard");
     }
-  }
+  }, [])
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Validate form data
+      loginSchema.parse({ username, password });
+      setLoading(true);
+
+      // Call API to login
+      let data = {
+        username,
+        password
+      };
+      
+      const loginResponse = await login(data);
+
+      if(loginResponse.statusCode > 300 || !loginResponse.success) {
+        setError(loginResponse.message);
+        return;
+      }
+      
+      const user: User | null = loginResponse && loginResponse.data ? loginResponse.data : null;
+
+      setUser(user);
+      navigate("/dashboard");
+
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setError(err.errors[0].message);
+      } else {
+        setError("Invalid username or password");
+      }
+    } 
+    finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex h-screen">
-      <div className="w-1/2 bg-blue-500 text-white flex flex-col justify-center items-center p-10">
-        <h1 className="text-5xl font-bold">Welcome to Sales App!</h1>
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-white to-gray-400">
+      <div className=" text-center mt-28">
         <img
-          alt="Sales Logo"
-          src="/images/saleslogo.jpeg"
-          className="mx-auto h-50 w-auto mix-blend-multiply"
+        src="/images/crm-logo.png"
+          alt="Sales CRM Logo"
+          className="mx-auto max-w-60"
         />
-        <p className="mt-4 text-lg text-center max-w-md">
-          Boost your sales efficiency with automation. Manage tasks effortlessly and increase productivity!
-        </p>
+
+        <h3 className="inset-0 mt-6 text-2xl font-semibold">
+          WELCOME BACK
+        </h3>
       </div>
 
-      <div className="w-1/2 flex justify-center items-center p-10 bg-white shadow-lg rounded-lg">
-        <div className="w-full max-w-md">
-          <h2 className="text-2xl font-bold">Welcome Back!</h2>
-          <form className="mt-6" onSubmit={handleSubmit(loginUser)}>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-start font-medium my-2">Username</label>
-              <input
-                type="text"
-                autoComplete="off"
-                placeholder="Enter your username"
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                {...register("username", { required: true })}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-start font-medium my-2">Password</label>
-              <input
-                type="password"
+      <div className="flex items-center justify-center mt-10">
+        <Card className="w-full max-w-md mx-4 bg-white shadow-lg rounded-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Log In</CardTitle>
+          </CardHeader>
 
-                autoComplete="off"
-                placeholder="Enter your password"
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                {...register("password", { required: true })}
-              />
-            </div>
-            <div className="flex justify-between text-sm text-gray-600">
-              <a href="#" className="text-blue-600">Forgot password?</a>
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-3 rounded-lg font-bold mt-3 hover:bg-blue-400"
-            >
-              Sign In
-            </button>
-          </form>
+          <CardContent>
+            {error && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+                {error}
+              </div>
+            )}
 
-        </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="w-full border-gray-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full border-gray-400"
+                />
+              </div>
+
+              <div className="space-x-2"></div>
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Logging In..." : "Log In"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

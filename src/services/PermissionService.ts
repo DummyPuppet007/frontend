@@ -12,7 +12,7 @@ export async function addPermission(data: PermissionData): Promise<FetchDataResp
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to add permission.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -35,7 +35,7 @@ export async function getAllPermission(): Promise<FetchDataResponse<PermissionLi
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to get all permissions.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -58,7 +58,7 @@ export async function getPermission(id: number): Promise<FetchDataResponse<Permi
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to get permission detail.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -82,7 +82,7 @@ export async function editPermission(id: number, data: PermissionData): Promise<
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to edit permission",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
@@ -105,7 +105,30 @@ export async function deletePermission(id: number): Promise<FetchDataResponse<Pe
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty - Failed to delete module.",
+            message: response.message || "Response is Empty.",
+            data: null,
+        };
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        data: response.data,
+        message: response.message,
+    };
+}
+
+export async function getPermissionByName(name: string): Promise<FetchDataResponse<PermissionList[]>> {
+    const response = await FetchData<PermissionList[]>({
+        url: `auth/get-permission-by-name?name=${name}`,
+        method: "GET",
+    });
+
+    if (!response.data) {
+        return {
+            success: false,
+            statusCode: 400,
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }

@@ -1,3 +1,4 @@
+import ErrorMessage from "@/components/common/ErrorMessage";
 import { DataTable } from "@/components/Datatable/data-table";
 import { DataTableSkeleton } from "@/components/Datatable/data-table-skeleton";
 import { columns } from "@/components/Datatable/machinemodel-columns";
@@ -17,11 +18,11 @@ function MachineModel() {
             const response = await getAllMachineModels();
 
             if (!response || response.statusCode !== 200) {
-                setError(response.message);
+                setError("Error : " + response.message);
             }
             setMachineModels(response.data || []);
         } catch (error: any) {
-            setError(error.message);
+            setError("Error : " + error.message);
         } finally {
             setLoading(false);
         }
@@ -31,10 +32,26 @@ function MachineModel() {
         fetchMachineModels();
     }, [])
 
+    if (error) {
+        return (
+            <div className="m-8">
+                <ErrorMessage message={error} className="mb-8" />
+                <DataTableSkeleton
+                    columnCount={columns.length}
+                    rowCount={10}
+                    searchableColumnCount={1}
+                    showViewOptions={true}
+                    withPagination={true}
+                    shrinkZero={false}
+                />
+            </div>
+        )
+    }
+
     if (loading) {
         return (
-            <div className="py-4 w-full px-2">
-                <h1 className="pb-2 text-3xl font-medium border-b mb-4">Machine Model</h1>
+            <div className="flex flex-col m-8">
+                <h1 className="pb-2 text-3xl font-bold border-b mb-4">Machine Model</h1>
                 <DataTableSkeleton
                     columnCount={columns.length}
                     rowCount={10}
@@ -48,8 +65,8 @@ function MachineModel() {
     }
 
     return (
-        <div className="py-4 w-full px-2">
-            <h1 className="pb-2 text-3xl font-medium border-b mb-4">Machine Model</h1>
+        <div className="flex flex-col m-8">
+            <h1 className="pb-2 text-3xl font-bold border-b mb-4">Machine Model</h1>
             <div className="flex flex-col items-end mb-4">
                 <MachineModelForm refreshMachineModels={fetchMachineModels} />
             </div>

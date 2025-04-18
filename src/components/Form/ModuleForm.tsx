@@ -1,8 +1,9 @@
-import CommonDialog from "@/Common/Dialog"
+import CommonDialog from "@/components/common/Dialog"
 import { addModule, editModule } from "@/services/ModuleService"
 import { ModuleList } from "@/types/module.type";
 import { useState, useEffect } from "react"
 import { useForm, SubmitHandler } from "react-hook-form"
+import { toast } from "react-hot-toast"
 
 type ModuleFormProps = {
     editData: ModuleList | null;
@@ -11,7 +12,6 @@ type ModuleFormProps = {
 };
 
 const ModuleForm: React.FC<ModuleFormProps> = ({ editData, setEditData, refreshModules }) => {
-    const [error, setError] = useState<string>("");
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(!!editData);
     const { handleSubmit, reset, setValue, control } = useForm<ModuleList>({
         defaultValues: {
@@ -31,27 +31,35 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ editData, setEditData, refreshM
     }, [editData, setValue]);
 
     const onSubmitModule: SubmitHandler<ModuleList> = async (data) => {
-        setError("")
         try {
+            let response;
             if (editData) {
-                const response = await editModule(editData.moduleId, data);
+                const updatedData = {
+                    ...data,
+                    moduleId: editData.moduleId,
+                };
+                
+                response = await editModule(updatedData);
 
                 if (!response || response.statusCode !== 200) {
-                    setError("Failed To Update Module.");
+                    toast.error("Error : " + response.message);
+                    return;
                 }
             } else {
-                const response = await addModule(data);
+                response = await addModule(data);
 
-                if (!response || response.statusCode !== 200) {
-                    setError("Failed TO Create Module.");
+                if (!response || response.statusCode  !== 200) {
+                    toast.error("Error : " + response.message);
+                    return;
                 }
             }
+            toast.success(response.message);
             reset();
             setEditData(null);
             setIsDialogOpen(false);
             refreshModules();
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     };
 
@@ -84,6 +92,5 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ editData, setEditData, refreshM
         />
     );
 }
-
 
 export default ModuleForm;

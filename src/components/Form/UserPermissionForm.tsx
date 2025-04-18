@@ -1,88 +1,88 @@
 import { Users } from "@/types/user.type";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getAllUsers } from "@/services/UserService";
-import { getAllPermission } from "@/services/PermissionService";
-import CommonDialog from "@/Common/Dialog";
+import CommonDialog from "@/components/common/Dialog"
 import { useForm } from "react-hook-form";
 import { UserPermissionData } from "@/types/userpermission.type";
 import { addUserPermission } from "@/services/UserPermissionService";
-import { Permissions } from "@/types/permission.type";
+import { toast } from "react-hot-toast";
+import { SearchResult } from "@/utils/types/common.types";
+import { debounce } from "lodash";
+import { getPermissionByName } from "@/services/PermissionService";
 
-function UserPermissionForm({ refreshUserPermissions }: { refreshUserPermissions: () => void }) {
+interface UserPermissionFormProps {
+    refreshUserPermissions: () => void;
+    setError: (error: string) => void;
+}
+
+function UserPermissionForm({ refreshUserPermissions, setError }: UserPermissionFormProps) {
     const { handleSubmit, control, reset } = useForm<UserPermissionData>();
-    const [userData, setUserData] = useState<Users[]>([])
-    const [permissionData, setPermissionData] = useState<Permissions[]>([]);
-    const [filteredPermissions, setFilteredPermissions] = useState<Permissions[]>([]);
-    const [selectedPermission, setSelectedPermission] = useState<Permissions | null>(null);
+    const [users, setUsers] = useState<Users[]>([]);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-    const [error, setError] = useState<string>("");
+
+    const fetchUsers = async () => {
+        try {
+            const response = await getAllUsers();
+
+            if (!response || response.statusCode !== 200) {
+                setError("Error : Failed to fetch Users." + response.message);
+            }
+
+            if (response.data) {
+                const formatUsers: Users[] = response.data.map((user: any) => ({
+                    id: user.userId,
+                    name: `${user.firstname} ${user.lastname}`
+                }));
+                setUsers(formatUsers);
+            }
+
+        } catch (error: any) {
+            setError("Error : " + error.message);
+        }
+    }
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [users, permissions] = await Promise.all([
-                    getAllUsers(),
-                    getAllPermission()
-                ])
-                if (!users || users.statusCode !== 200) {
-                    setError("Failed to fetch users.")
-                } else if (!permissions || permissions.statusCode !== 200) {
-                    setError("Failed to fetch permissions.")
-                }
-
-                if (users.data) {
-                    const formattedUsers: Users[] = users.data.map((user: any) => ({
-                        id: user.userId,
-                        name: `${user.firstname} ${user.lastname}`
-                    }));
-                    setUserData(formattedUsers);
-                }
-
-                if (permissions.data) {
-                    const formattedPermissions: Permissions[] = permissions.data.map((permission: any) => ({
-                        id: permission.permissionId,
-                        name: `${permission.module.moduleName}-${permission.action.actionName}`
-                    }));
-                    setPermissionData(formattedPermissions);
-                    setFilteredPermissions(formattedPermissions);
-                }
-            } catch (error: any) {
-                setError(error.message);
-            }
-        }
-        fetchData();
+        fetchUsers();
     }, [])
 
-    const handleSearch = (query: string) => {
-        query = "";
-        if (!query) {
-            setFilteredPermissions(permissionData);
-        } else {
-            setFilteredPermissions(
-                permissionData.filter((perm) =>
-                    perm.name.toLowerCase().includes(query.toLowerCase())
-                )
-            );
-        }
-    };
+    const handleSearchPermission = useCallback(
+        debounce(async (query: string) => {
+            if (query.length >= 2) {
+                const response = await getPermissionByName(query);
+                if (!response || response.statusCode !== 200 || !response.data) {
+                    setError("Error : Failed to fetch permissions." + response.message);
+                } else {
+                    const formatPermission = response.data.map((permission: any) => ({
+                        id: permission.permissionId,
+                        name: `${permission.module.moduleName} - ${permission.action.actionName}`,
+                    }))
+                    setSearchResults(formatPermission);
+                }
 
-    const handleSelect = (perm: Permissions) => {
-        setSelectedPermission(perm);
-    };
+            } else {
+                setSearchResults([]);
+            }
+        }, 300),
+        []
+    );
 
-    const onSubmitForm = async (data: UserPermissionData) => { 
+    const onSubmitForm = async (data: UserPermissionData) => {
         setError("");
         try {
             const response = await addUserPermission(data);
+
             if (!response || response.statusCode !== 200) {
-                setError("Failed to add role permission.")
+                toast.error("Error : Failed to add User Permission." + response.message);
+                return;
             } else {
+                toast.success("User Permission created successfully.");
                 setIsDialogOpen(false);
                 reset();
                 refreshUserPermissions();
             }
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     }
 
@@ -96,7 +96,7 @@ function UserPermissionForm({ refreshUserPermissions }: { refreshUserPermissions
                     name: "userId",
                     label: "User",
                     type: "select",
-                    options: userData,
+                    options: users,
                     placeholder: "Select User",
                     rules: { required: "User is required" },
                     control
@@ -105,12 +105,11 @@ function UserPermissionForm({ refreshUserPermissions }: { refreshUserPermissions
                     name: "permissionId",
                     label: "Permission",
                     type: "searchableSelect",
-                    options: filteredPermissions,
+                    options: searchResults,
                     placeholder: "Search Permission",
                     rules: { required: "Permission is required" },
                     control,
-                    onSearch: handleSearch,
-                    onSelect: handleSelect
+                    onSearch: handleSearchPermission,
                 }
             ]}
             onSubmit={handleSubmit(onSubmitForm)}

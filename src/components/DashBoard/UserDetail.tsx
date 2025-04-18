@@ -20,7 +20,7 @@ export default function UserDetail({ user, onClose }: UserDetailModalProps) {
 
                 <div className="grid grid-cols-2 gap-4 bg-gray-100 p-4 rounded-lg">
                     <DetailRow label="Full Name" value={`${user.firstname} ${user.lastname}`} isRequired />
-                    <DetailRow label="Email" value={user.email} isRequired />
+                    <DetailRow label="Email" value={user.email!} isRequired />
                     <DetailRow label="Login ID" value={user.username} />
                     <DetailRow label="User Role" value={user.role.roleName} />
                     <DetailRow label="Created Date" value={formatDate(user.createdAt)} />

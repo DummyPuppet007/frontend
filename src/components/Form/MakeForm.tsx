@@ -1,8 +1,9 @@
-import CommonDialog from "@/Common/Dialog";
+import CommonDialog from "@/components/common/Dialog"
 import { createMake } from "@/services/ProductionService";
 import { MakeData } from "@/types/production.type";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 
 type MakeFormProps = {
     refreshMakes: () => void;
@@ -10,8 +11,6 @@ type MakeFormProps = {
 
 const MakeForm: React.FC<MakeFormProps> = ({refreshMakes}) => {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-    const [error, setError] = useState<string>("");
-
     const { control, handleSubmit, reset } = useForm<MakeData>({
         defaultValues : {
             makeName : "",
@@ -19,20 +18,20 @@ const MakeForm: React.FC<MakeFormProps> = ({refreshMakes}) => {
     });
 
     const onSubmitMake: SubmitHandler<MakeData> = async (data) => {
-        setError("");
         try {
             const response = await createMake(data);
 
             if (!response || response.statusCode !== 200) {
-                setError(response.message);
+                toast.error("Failed to create Make : " + response.message);
             } else {
+                toast.success(response.message);
                 setIsDialogOpen(false);
                 reset();
                 refreshMakes();
             }
 
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     }
 

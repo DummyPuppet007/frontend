@@ -8,7 +8,7 @@ export type UserData = {
     firstname: string;
     lastname: string;
     middleName? : string | null;
-    email : string;
+    email : string | null;
     username : string;
     password? : string;
     roleId : number;

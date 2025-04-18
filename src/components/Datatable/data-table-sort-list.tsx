@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "react-router-dom";
-import { ArrowUpDown, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { ExtendedSortingState } from "@/utils/types/common.types";
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -8,12 +8,10 @@ import { Table } from "@tanstack/react-table";
 
 interface DataTableSortListProps<T> {
   table: Table<T>;
-  debounceMs?: number;
 }
 
 export function DataTableSortList<T>({
   table,
-  debounceMs = 500,
 }: DataTableSortListProps<T>) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sorting, setSorting] = React.useState<ExtendedSortingState<T>>(() => {

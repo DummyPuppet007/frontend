@@ -7,12 +7,12 @@ export async function createCustomer(data: CustomerData): Promise<FetchDataRespo
         method: "POST",
         data: data,
     });
-
+    
     if (!response.data) {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -35,7 +35,7 @@ export async function getAllCustomers(): Promise<FetchDataResponse<CustomerData[
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -59,7 +59,7 @@ export async function editCustomer(id: number, data: CustomerData): Promise<Fetc
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
@@ -67,7 +67,7 @@ export async function editCustomer(id: number, data: CustomerData): Promise<Fetc
     return {
         success: response.success,
         statusCode: response.statusCode,
-        message: response.message || "User updated successfully.",
+        message: response.message,
         data: response.data,
     };
 }
@@ -82,7 +82,7 @@ export async function getCustomerDetail(id: number): Promise<FetchDataResponse<C
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
@@ -90,8 +90,76 @@ export async function getCustomerDetail(id: number): Promise<FetchDataResponse<C
     return {
         success: response.success,
         statusCode: response.statusCode,
-        message: response.message || "Data successfully Retrived.",
+        message: response.message,
         data: response.data,
     };
 }
 
+export async function getCountriesByName(name: string): Promise<FetchDataResponse<any>> {
+    const response = await FetchData<any>({
+        url: `customer/get-country-list/search?search=${name}`,
+        method: "GET",
+    });
+
+    if (!response.data) {
+        return {
+            success: false,
+            statusCode: 400,
+            message: response.message || "Response is Empty.",
+            data: null,
+        }
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        message: response.message,
+        data: response.data,
+    };
+}
+
+export async function getStatesByName(countryID: number, name: string): Promise <FetchDataResponse<any>>{
+    const response = await FetchData<any>({
+        url: `customer/get-state-list/search?countryId=${countryID}&search=${name}`,
+        method: "GET",
+    });
+
+    if (!response.data) {
+        return {
+            success: false,
+            statusCode: 400,
+            message: response.message || "Response is Empty.",
+            data: null,
+        }
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        message: response.message,
+        data: response.data,
+    };
+}
+
+export async function getCitiesByName(stateId: number, name: string): Promise <FetchDataResponse<any>>{
+    const response = await FetchData<any>({
+        url: `customer/get-city-list/search?stateId=${stateId}$search=${name}`,
+        method: "GET",
+    });
+
+    if (!response.data) {
+        return {
+            success: false,
+            statusCode: 400,
+            message: response.message || "Response is Empty.",
+            data: null,
+        }
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        message: response.message,
+        data: response.data,
+    };    
+}

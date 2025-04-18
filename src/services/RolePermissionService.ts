@@ -25,25 +25,25 @@ export async function addRolePermission(data: RolePermissionData): Promise<Fetch
     };
 }
 
-export async function getAllRolePermissions(): Promise<FetchDataResponse<RolePermissionList[]>>{
+export async function getAllRolePermissions(): Promise<FetchDataResponse<RolePermissionList[]>> {
     const response = await FetchData<RolePermissionList[]>({
-            url: "auth/get-role-permissions",
-            method: "GET",
-        });
-    
-        if (!response.data) {
-            return {
-                success: false,
-                statusCode: 400,
-                message: "Response is Empty - Failed to get all role permissions.",
-                data: null,
-            };
-        }
-    
+        url: "auth/get-role-permissions",
+        method: "GET",
+    });
+
+    if (!response.data) {
         return {
-            success: response.success,
-            statusCode: response.statusCode,
-            data: response.data,
-            message: response.message,
+            success: false,
+            statusCode: 400,
+            message: "Response is Empty - Failed to get all role permissions.",
+            data: null,
         };
+    }
+
+    return {
+        success: response.success,
+        statusCode: response.statusCode,
+        data: response.data,
+        message: response.message,
+    };
 }

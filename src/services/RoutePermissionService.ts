@@ -12,7 +12,7 @@ export async function addRoutePermission(data : RoutePermissionData) : Promise<F
             return {
                 success: false,
                 statusCode: 400,
-                message: "Response is Empty - Failed to add user permission.",
+                message: response.message || "Response is Empty.",
                 data: null,
             };
         }
@@ -35,7 +35,7 @@ export async function getAllRoutePermissions(): Promise<FetchDataResponse<RouteP
             return {
                 success: false,
                 statusCode: 400,
-                message: "Response is Empty - Failed to get all route permissions.",
+                message: response.message || "Response is Empty.",
                 data: null,
             };
         }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { getActions, deleteAction } from "@/services/ActionService";
 import {
     Table,
     TableBody,
@@ -9,7 +8,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Pencil, Trash } from "lucide-react";
-import ActionForm from "../Form/ActionForm";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,27 +19,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton"; // ShadCN Skeleton Import
 import { ActionList } from "@/types/action.type";
-
-const SkeletonLoader = () => {
-    return (
-        <TableBody>
-            {[...Array(5)].map((_, index) => (
-                <TableRow key={index}>
-                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-64" /></TableCell>
-                    <TableCell>
-                        <div className="flex justify-end w-full">
-                            <Skeleton className="h-6 w-20" />
-                        </div>
-                    </TableCell>
-                </TableRow>
-            ))}
-        </TableBody>
-    );
-};
+import ActionForm from "../Form/ActionForm";
+import { getActions, deleteAction } from "@/services/ActionService";
+import ErrorMessage from "../common/ErrorMessage";
+import { TableSkeleton } from "../common/Skeletons";
+import toast from "react-hot-toast";
 
 function Action() {
     const [actions, setActions] = useState<ActionList[] | null>([]);
@@ -49,7 +32,6 @@ function Action() {
     const [loading, setLoading] = useState<boolean>(true);
     const [editData, setEditData] = useState<ActionList | null>(null);
     const [selectedActionId, setSelectedActionId] = useState<number | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
     useEffect(() => {
         fetchActions();
@@ -60,41 +42,54 @@ function Action() {
         try {
             const response = await getActions();
 
-            if (!response || response.statusCode !== 200) {
-                setError("Failed to fetch Actions.");
+            if (!response || response.statusCode  !== 200) {
+                setError("Error : Failed to fetch Actions." + response.message);
                 return;
             }
             setActions(response.data);
         } catch (error: any) {
-            setError(error.message);
+            setError("Error : " + error.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const confirmDelete = (id: number) => {
-        setSelectedActionId(id);
-        setIsDialogOpen(true);
-    };
-
     const handleDelete = async () => {
         if (!selectedActionId) return;
-
+       
         const response = await deleteAction(selectedActionId);
 
-        if (response.success) {
+        if (response.success && response.statusCode === 200) {
             setActions((prevActions) => prevActions!.filter((action) => action.actionId !== selectedActionId));
+            toast.success(response.message);
         } else {
-            setError("Failed to delete action.");
+            toast.error("Error : " + response.message);
         }
 
-        setIsDialogOpen(false);
         setSelectedActionId(null);
     };
 
+    if (error) {
+        return (
+            <div className="m-8">
+                <ErrorMessage message={error} className="mb-8" />
+                <TableSkeleton headers={["Sr. No", "Action", "Description", "Operation"]} />
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="m-8">
+                <h1 className="text-3xl font-bold border-b mb-4">Actions</h1>
+                <TableSkeleton headers={["Sr. No", "Action", "Description", "Operation"]} />
+            </div>
+        );
+    }
+
     return (
-        <div className="py-4 px-2 w-full">
-            <h1 className="pb-2 text-3xl font-medium border-b mb-4">Actions</h1>
+        <div className="flex flex-col m-8">
+            <h1 className="text-3xl font-bold border-b mb-4">Actions</h1>
             <div className="flex items-center justify-end mb-4">
                 <ActionForm editData={editData} setEditData={setEditData} refreshActions={fetchActions} />
             </div>
@@ -107,9 +102,7 @@ function Action() {
                         <TableHead className="text-right">Operation</TableHead>
                     </TableRow>
                 </TableHeader>
-                {loading ? (
-                    <SkeletonLoader />
-                ) : actions && actions.length > 0 ? (
+                {actions && actions.length > 0 ? (
                     <TableBody className="border-b border-gray-300">
                         {actions.map((action, index) => (
                             <TableRow key={action.actionId} className="hover:bg-gray-200">
@@ -126,7 +119,7 @@ function Action() {
                                             <AlertDialogTrigger asChild>
                                                 <Trash
                                                     className="cursor-pointer text-red-500"
-                                                    onClick={() => confirmDelete(action.actionId)}
+                                                    onClick={() => setSelectedActionId(action.actionId)}
                                                 />
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
@@ -138,7 +131,10 @@ function Action() {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+                                                    <AlertDialogAction
+                                                        onClick={handleDelete}
+                                                        className="bg-red-500 hover:bg-red-600"
+                                                    >
                                                         Delete
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
@@ -164,4 +160,3 @@ function Action() {
 }
 
 export default Action;
-

@@ -12,6 +12,9 @@ import { ModuleList } from "@/types/module.type";
 import { ActionList } from "@/types/action.type";
 import { PermissionData } from "@/types/permission.type";
 import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
+import ErrorMessage from "../common/ErrorMessage";
+import { PermissionFormSkeleton } from "../common/Skeletons";
 
 interface PermissionFormProps {
     initialData?: PermissionData;
@@ -39,10 +42,15 @@ const PermissionForm: React.FC<PermissionFormProps> = ({ initialData }) => {
                     getActions()
                 ]);
 
+                if(!modules || modules.statusCode !== 200) {
+                    setError("Error : Modules not found." + modules.message);
+                } else if(!actions || actions.statusCode !== 200) {
+                    setError("Error : Actions not found." + actions.message);
+                }
                 setModuleData(modules.data);
                 setActionData(actions.data);
             } catch (error: any) {
-                console.error(error.message);
+                setError("Error : " + error.message);
             }
         };
         fetchData();
@@ -58,42 +66,51 @@ const PermissionForm: React.FC<PermissionFormProps> = ({ initialData }) => {
     const onSubmitPermissionForm = async (data: PermissionData) => { 
         setError("");
         try {
-           
+            let response;    
             if (initialData) {
-                const response = await editPermission(initialData.permissionId!, data) 
+                response = await editPermission(initialData.permissionId!, data) 
 
                 if (!response || response.statusCode !== 200) {
-                    setError("Failed To Update Permission.");
+                    toast.error("Error : Failed To Update Permission." + response.message);
                     return;
                 }
-
+                toast.success("Permission updated successfully.");
                 navigate("/dashboard/auth/permissions");
             } else {   
-                const response = await addPermission(data); 
+                response = await addPermission(data); 
 
                 if (!response || response.statusCode !== 200) {
-                    setError("Failed To Create Permission.");
+                    toast.error("Error : Failed To Create Permission." + response.message);
                     return;
                 }
-
+                toast.success("Permission created successfully.");
                 navigate("/dashboard/auth/permissions");
             }      
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     };
 
+    if(error) {
+        return(
+            <div>
+                <ErrorMessage message={error}  className="mb-8"/>
+                <PermissionFormSkeleton />
+            </div>
+        )
+    }
+
     return (
         <>
-            <h1 className="pb-2 text-3xl font-medium border-b mb-4">{initialData ? "Edit Permission" : "Create Permission"}</h1>
+            <h1 className="text-3xl font-bold border-b mb-4">{initialData ? "Edit Permission" : "Create Permission"}</h1>
             <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="my-5 py-5 border border-neutral-400 rounded-lg shadow-lg">
-                <form onSubmit={handleSubmit(onSubmitPermissionForm)} className="space-y-6 m-4">
+            >
+                <form onSubmit={handleSubmit(onSubmitPermissionForm)} className="space-y-6">
                     <div>
-                        <Label htmlFor="moduleId" className="block text-md font-medium text-zinc-900">Select Module:</Label>
+                        <Label htmlFor="moduleId" className="block text-md font-medium text-zinc-900">Select Module :</Label>
                         {moduleData && moduleData.length > 0 ? (
                             <Controller
                                 name="moduleId"
@@ -102,10 +119,10 @@ const PermissionForm: React.FC<PermissionFormProps> = ({ initialData }) => {
                                 render={({ field }) => (
                                     <Select onValueChange={(value) => (field.onChange(Number(value)))}
                                     value={field.value ? field.value.toString() : ""}>
-                                        <SelectTrigger className="mt-1 w-[45%] px-3 py-2 border rounded-md shadow-sm bg-white">
+                                        <SelectTrigger className="mt-1 w-full sm:w-[45%] px-3 py-2 border rounded-md shadow-sm bg-white">
                                             <SelectValue placeholder="Select a module" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-200">
+                                        <SelectContent>
                                             {moduleData.map((module) => (
                                                 <SelectItem key={module.moduleId} value={String(module.moduleId)}>{module.moduleName}</SelectItem>
                                             ))}
@@ -119,7 +136,7 @@ const PermissionForm: React.FC<PermissionFormProps> = ({ initialData }) => {
                         {errors.moduleId && <p className="text-red-500 text-sm mt-1 font-medium">{errors.moduleId.message}</p>}
 
                         <div className="mt-5">
-                            <Label className="block text-md font-medium text-zinc-900">Select Action:</Label>
+                            <Label className="block text-md font-medium text-zinc-900">Select Action :</Label>
                             {actionData && actionData.length > 0 ? (
                                 <Controller
                                     name="actionId"
@@ -145,7 +162,7 @@ const PermissionForm: React.FC<PermissionFormProps> = ({ initialData }) => {
                             {errors.actionId && <p className="text-red-500 text-sm mt-1 font-medium">{errors.actionId.message}</p>}
                         </div>
 
-                        <Button type="submit" className="mt-5 w-[45%] bg-zinc-900 hover:bg-zinc-700">
+                        <Button type="submit" className="mt-5 w-full sm:w-[45%] bg-zinc-900 hover:bg-zinc-700">
                             {initialData ? "Update Permission" : "Create Permission"}
                         </Button>
                     </div>

@@ -2,15 +2,15 @@ import { createRole } from "@/services/RoleService"
 import React from "react"
 import { SubmitHandler, useForm } from "react-hook-form"
 import { useState } from "react"
-import CommonDialog from "@/Common/Dialog"
+import CommonDialog from "@/components/common/Dialog"
 import { RoleFormData } from "@/types/role.type"
+import { toast } from "react-hot-toast"
 
 type RoleFormProps = {
   refreshRoles: () => void;
 };
 
 const RoleForm: React.FC<RoleFormProps> = ({refreshRoles}) => {
-  const [error, setError] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const { handleSubmit, control, reset } = useForm<RoleFormData>({
@@ -26,15 +26,15 @@ const RoleForm: React.FC<RoleFormProps> = ({refreshRoles}) => {
       const response = await createRole(data);
       
       if (!response || response.statusCode !== 200) {
-        setError("Role Creation Failed.")
+        toast.error("Failed to create Role."+response.message);
       } else {
+        toast.success(response.message);
         setIsDialogOpen(false);
         reset();
         refreshRoles();
       }
-
     } catch (error: any) {
-      setError(error.message);
+      toast.error("Error : "+error.message);
     }
   };
 

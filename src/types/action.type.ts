@@ -3,6 +3,7 @@ export type ActionServiceResponse = {
 }
 
 export type ActionData = {
+    actionId?   : number;
     actionName : string;
     description : string;
 }

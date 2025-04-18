@@ -1,94 +1,86 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { getRoles } from "@/services/RoleService";
-import { getAllPermission } from "@/services/PermissionService";
-import CommonDialog from "@/Common/Dialog";
+import { getPermissionByName } from "@/services/PermissionService";
+import CommonDialog from "@/components/common/Dialog"
 import { addRolePermission } from "@/services/RolePermissionService";
-import { Permissions } from "@/types/permission.type";
 import { Roles } from "@/types/role.type";
 import { RolePermissionData } from "@/types/rolepermission.type";
+import { toast } from "react-hot-toast";
+import { debounce } from "lodash";
+import { SearchResult } from "@/utils/types/common.types";
 
-function RolePermissionForm({ refreshRolePermissions }: { refreshRolePermissions: () => void }) {
+interface RolePermissionFormProps {
+    refreshRolePermissions: () => void;
+    setError: (error: string) => void;
+}
+
+function RolePermissionForm({ refreshRolePermissions, setError }: RolePermissionFormProps) {
     const { handleSubmit, control, reset } = useForm<RolePermissionData>();
-    const [roleData, setRoleData] = useState<Roles[]>([]);
-    const [permissionData, setPermissionData] = useState<Permissions[]>([]);
-    const [filteredPermissions, setFilteredPermissions] = useState<Permissions[]>([]);
-    const [selectedPermission, setSelectedPermission] = useState<Permissions | null>(null);
-    const [error, setError] = useState<string>("");
+    const [roles, setRoles] = useState<Roles[]>([]);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [roles, permissions] = await Promise.all([
-                    getRoles(),
-                    getAllPermission()
-                ]);
+    const fetchRoles = async () => {
+        try {
+            const response = await getRoles();
 
-                if(!roles || roles.statusCode !== 200) {
-                    setError("Failed to fetch roles.")
-                } else if(!permissions || permissions.statusCode !== 200) {
-                    setError("Failed to fetch permissions.")
-                }
-
-                if(roles.data) {
-                    const formattedRoles: Roles[] = roles.data.map((role: any) => ({
-                        id: role.roleId,
-                        name: role.roleName
-                    }));
-                    setRoleData(formattedRoles);
-                }
-              
-                if(permissions.data) {
-                    const formattedPermissions: Permissions[] = permissions.data.map((permission:any) => ({
-                        id: permission.permissionId,
-                        name: `${permission.module.moduleName}-${permission.action.actionName}`
-                    }));
-                    setPermissionData(formattedPermissions);
-                    setFilteredPermissions(formattedPermissions);
-                }
-               
-               
-            } catch (error) {
-                console.error("Error fetching data:", error);
+            if (!response || response.statusCode !== 200) {
+                setError("Error : Failed to fetch roles." + response.message);
             }
-        };
-        fetchData();
-    }, []);
 
-    const handleSearch = (query: string) => {
-        query = "";
-        if (!query) {
-            setFilteredPermissions(permissionData);
-        } else {
-            setFilteredPermissions(
-                permissionData.filter((perm) =>
-                    perm.name.toLowerCase().includes(query.toLowerCase())
-                )
-            );
+            if (response.data) {
+                const formatRoles: Roles[] = response.data.map((role: any) => ({
+                    id: role.roleId,
+                    name: role.roleName
+                }));
+                setRoles(formatRoles);
+            }
+        } catch (error: any) {
+            setError("Error : " + error.message);
         }
     };
 
+    useEffect(() => {
+        fetchRoles();
+    }, []);
 
-    const handleSelect = (perm: Permissions) => {
-        setSelectedPermission(perm);
-    };
+    const handleSearchPermission = useCallback(
+        debounce(async (query: string) => {
+            if (query.length >= 2) {
+                const response = await getPermissionByName(query);
+                if (!response || response.statusCode !== 200 || !response.data) {
+                    setError("Error : Failed to fetch permissions." + response.message);
+                } else {
+                    const formatPermission = response.data.map((permission: any) => ({
+                        id: permission.permissionId,
+                        name: `${permission.module.moduleName} - ${permission.action.actionName}`,
+                    }))
+                    setSearchResults(formatPermission);
+                }
 
-    const onSubmitForm = async (data: RolePermissionData) => {    
-        setError("");
+            } else {
+                setSearchResults([]);
+            }
+        }, 300),
+        []
+    );
+
+    const onSubmitForm = async (data: RolePermissionData) => {
         try {
             const response = await addRolePermission(data);
-          
-            if(!response || response.statusCode !== 200) {
-                setError("Failed to add role permission.")
+
+            if (!response || response.statusCode !== 200) {
+                toast.error("Error : Failed to create Role Permission. " + response.message);
+                return;
             } else {
+                toast.success("Role Permission created successfully.");
                 setIsDialogOpen(false);
                 reset();
                 refreshRolePermissions();
             }
-        
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     };
 
@@ -102,7 +94,7 @@ function RolePermissionForm({ refreshRolePermissions }: { refreshRolePermissions
                     name: "roleId",
                     label: "Role",
                     type: "select",
-                    options: roleData,
+                    options: roles,
                     placeholder: "Select Role",
                     rules: { required: "Role is required" },
                     control
@@ -111,12 +103,11 @@ function RolePermissionForm({ refreshRolePermissions }: { refreshRolePermissions
                     name: "permissionId",
                     label: "Permission",
                     type: "searchableSelect",
-                    options: filteredPermissions,
+                    options: searchResults,
                     placeholder: "Search Permission",
                     rules: { required: "Permission is required" },
                     control,
-                    onSearch: handleSearch,
-                    onSelect: handleSelect
+                    onSearch: handleSearchPermission,
                 }
             ]}
             onSubmit={handleSubmit(onSubmitForm)}

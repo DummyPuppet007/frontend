@@ -1,8 +1,9 @@
-import CommonDialog from "@/Common/Dialog";
+import CommonDialog from "@/components/common/Dialog"
 import { createMachineType } from "@/services/ProductionService";
 import { MachineTypeData } from "@/types/production.type";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 
 type MachineTypeFormProps = {
     refreshMachineTypes : () => void;
@@ -10,7 +11,6 @@ type MachineTypeFormProps = {
 
 const MachineTypeForm: React.FC<MachineTypeFormProps> = ({refreshMachineTypes}) => {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-    const [error, setError] = useState<string>("");
 
     const { handleSubmit, control, reset } = useForm<MachineTypeData>({
         defaultValues: {
@@ -19,19 +19,20 @@ const MachineTypeForm: React.FC<MachineTypeFormProps> = ({refreshMachineTypes}) 
     });
 
     const onSubmitMachineType: SubmitHandler<MachineTypeData> = async (data) => {
-        setError("");
         try {
             const response = await createMachineType(data);
 
             if(!response || response.statusCode !== 200){
-                setError(response.message);
+                toast.error("Failed to create Machine Type : " + response.message);
+                return;
             } else {
+                toast.success(response.message);
                 setIsDialogOpen(false);
                 reset();
                 refreshMachineTypes();
             }
         } catch (error: any) {
-            setError(error.message);
+            toast.error("Error : " + error.message);
         }
     }
     return (

@@ -13,7 +13,7 @@ export async function addModule(data: ModuleData): Promise<FetchDataResponse<Mod
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -36,7 +36,7 @@ export async function getModules(): Promise<FetchDataResponse<ModuleList[]>> {
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         };
     }
@@ -49,9 +49,9 @@ export async function getModules(): Promise<FetchDataResponse<ModuleList[]>> {
     };
 }
 
-export async function editModule(id: number, data: ModuleData): Promise<FetchDataResponse<ModuleServiceResponse>> {
+export async function editModule(data: ModuleData): Promise<FetchDataResponse<ModuleServiceResponse>> {
     const response = await FetchData<ModuleServiceResponse>({
-        url: `edit-module/${id}`,
+        url: "auth/update-module",
         method: "PUT",
         data: data
     });
@@ -60,7 +60,7 @@ export async function editModule(id: number, data: ModuleData): Promise<FetchDat
         return {
             success: false,
             statusCode: 400,
-            message: "Response is Empty.",
+            message: response.message || "Response is Empty.",
             data: null,
         }
     }
@@ -75,15 +75,15 @@ export async function editModule(id: number, data: ModuleData): Promise<FetchDat
 
 export async function deleteModule(id:number): Promise<FetchDataResponse<ModuleServiceResponse>>{
     const response = await FetchData<ModuleServiceResponse>({
-            url: `delete-module/${id}`,
-            method: "DELETE",
+            url: `auth/delete-module/${id}`,
+            method: "PUT",
         });
     
         if (!response || !response.success) {
             return {
                 success: false,
                 statusCode: 400,
-                message: "Failed to delete module.Response is Empty.",
+                message: response.message || "Response is Empty.",
                 data: null,
             };
         }

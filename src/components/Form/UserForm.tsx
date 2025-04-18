@@ -17,6 +17,10 @@ import { RoleList } from "@/types/role.type";
 import { Label } from "../ui/label";
 import { UserData } from "@/types/user.type";
 import { motion } from "framer-motion";
+import { Button } from "../ui/button";
+import { toast } from "react-hot-toast";
+import ErrorMessage from "../common/ErrorMessage";
+import { UserFormSkeleton } from "../common/Skeletons";
 
 interface UserFormProps {
   initialData?: UserData | null;
@@ -31,6 +35,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
     control } = useForm<UserData>();
   const [showPassword, setShowPassword] = useState(false);
   const [roles, setRoles] = useState<RoleList[] | null>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
@@ -39,12 +44,12 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
         const response = await getRoles();
 
         if (!response || response.statusCode !== 200) {
-          setError("Failed to fetch Roles!");
+          setError("Error : Failed to fetch Roles." + response.message);
         } else {
           setRoles(response.data)
         }
       } catch (error: any) {
-        setError("Something went wrong!");
+        setError("Error : " + error.message);
       }
     }
 
@@ -58,49 +63,71 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
   }, [initialData, reset]);
 
   const createUser: SubmitHandler<UserData> = async (data) => {
-    setError("")
+   
+    const formData: UserData = {
+      ...data,
+      middleName: data.middleName === "" ? null : data.middleName,
+      email: data.email === "" ? null : data.email,
+    };
+           
     if (initialData) {
       try {
-        const editresponse = await editUser(initialData.userId, data);
+        const editresponse = await editUser(formData);
 
         if (!editresponse || editresponse.statusCode !== 200) {
-          setError("User Updation failed!");
+          toast.error("Failed to edit user : " + editresponse.message);
+          return;
+        } else {
+          toast.success(editresponse.message);
+          navigate("/dashboard/auth/users");
         }
-
-        navigate("/dashboard/auth/users");
       } catch (error: any) {
-        setError(error.message || "Something went wrong!");
+        toast.error("Error : " + error.message);
+      } finally {
+        setLoading(false);
       }
     } else {
 
       try {
-        const response = await registerUser(data);
+        const response = await registerUser(formData);
 
         if (!response || response.statusCode !== 200) {
-          setError("User Registration failed!");
+          toast.error("Failed to create user : " + response.message);
+          return;
+        } else {
+          toast.success(response.message);
+          navigate("/dashboard/auth/users");
         }
-
-        navigate("/dashboard/auth/users");
       } catch (error: any) {
-        setError(error.message || "Something went wrong!");
+        toast.error("Error : " + error.message);
+      } finally {
+        setLoading(false);
       }
     }
   }
 
+  if (error) {
+    return (
+      <div>
+        <ErrorMessage message={error} />
+        <UserFormSkeleton />
+      </div>
+    )
+  }
 
   return (
     <>
-      <h1 className="pb-2 text-3xl font-medium border-b mb-4">{initialData ? "Edit User" : "Create User"}</h1>
+      <h1 className="text-3xl font-bold border-b mb-4">{initialData ? "Edit User" : "Create User"}</h1>
       <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="my-5 py-5 border border-neutral-400 rounded-lg shadow-lg">
-        <form onSubmit={handleSubmit(createUser)} className="space-y-6 m-4">
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <form onSubmit={handleSubmit(createUser)} className="space-y-6 ">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
             <div>
-              <Label htmlFor="firstname" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="firstname" className="block text-sm font-medium text-zinc-900">
                 First Name
               </Label>
               <Input
@@ -115,7 +142,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
             </div>
 
             <div>
-              <Label htmlFor="middleName" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="middleName" className="block text-sm font-medium text-zinc-900">
                 Middle Name
               </Label>
               <Input
@@ -129,7 +156,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
             </div>
 
             <div>
-              <Label htmlFor="lastname" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="lastname" className="block text-sm font-medium text-zinc-900">
                 Last Name
               </Label>
               <Input
@@ -145,7 +172,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
           </div>
 
           <div>
-            <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <Label htmlFor="email" className="block text-sm font-medium text-zinc-900">
               Email
             </Label>
             <Input
@@ -161,7 +188,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="username" className="block text-sm font-medium text-zinc-900">
                 Username
               </Label>
               <Input
@@ -175,7 +202,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
               {errors.username && <p className="text-red-500 text-sm mt-1 font-medium">{errors.username.message}</p>}
             </div>
             <div>
-              <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="password" className="block text-sm font-medium text-zinc-900">
                 Password
               </Label>
               <div className="relative">
@@ -204,7 +231,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
           </div>
 
           <div>
-            <Label htmlFor="roleId" className="block text-sm font-medium text-gray-700">
+            <Label htmlFor="roleId" className="block text-sm font-medium text-zinc-900">
               Select Role:
             </Label>
 
@@ -218,7 +245,7 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
                     onValueChange={(value) => field.onChange(Number(value))}
                     value={field.value ? field.value.toString() : ""}
                   >
-                    <SelectTrigger className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-gray-500">
+                    <SelectTrigger className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -239,15 +266,12 @@ const UserForm: React.FC<UserFormProps> = ({ initialData }) => {
           </div>
 
           <div>
-            <button
-              type="submit"
-              className="w-full bg-zinc-800 text-white px-4 py-2 mt-3 rounded-lg font-medium shadow-lg transition-all relative 
-             hover:bg-zinc-700 hover:shadow-inner hover:text-lg"
-            >
-              {initialData ? "Edit User" : "Create User"}
-            </button>
-
-
+            <Button
+              type="submit" disabled={loading}
+              className="w-full">
+              {loading ? "Submitting..." :
+                initialData ? "Edit User" : "Create User"}
+            </Button>
           </div>
         </form>
       </motion.div>

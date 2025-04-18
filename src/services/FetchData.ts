@@ -1,3 +1,5 @@
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 type FetchDataVariable = {
     url: string;
     method?: string;
@@ -20,14 +22,15 @@ export async function FetchData<T>({
 
 }: FetchDataVariable): Promise<FetchDataResponse<T>> { 
     try {
-        const response = await fetch(`https://localhost:8081/api/${url}`, {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
             method,
             headers,
             body: data ? JSON.stringify(data) : null,
             credentials : "include",
             
         });
-        
+
+       
         if (!response.ok) { 
             const errorData = await response.json();
 
@@ -40,7 +43,7 @@ export async function FetchData<T>({
         }
 
         const responseData = await response.json();
-        //console.log(responseData);
+        // console.log(responseData);
         return {
             success : responseData.success,
             statusCode: 200,
